@@ -18,6 +18,20 @@ function App() {
       });
   }, []);
 
+  function Lisakuulastuse(poodiNimi) {
+    var pood = poed.find((p) => p.nimi === poodiNimi);
+    if (pood !== undefined) {
+      fetch(`https://localhost:7056/api/Poodidi/lisakuulastuse/${pood.nimi}`, {
+        method: "POST",
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          pood.kuulastusteArv = data; // Обновляем количество посетителей в состоянии
+          setPoed([...poed]); // Обновляем состояние с новыми данными
+        });
+    }
+  }
+
   function lisaPood() {
     const uusPood = {
       nimi: nimiRef.current.value,
@@ -26,11 +40,7 @@ function App() {
       kuulastusteArv: 0,
     };
 
-    fetch("https://localhost:7056/api/Poodidi/lisa", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+    fetch("https://localhost:7056/api/Poodidi/lisa", { method: "POST", headers: {"Content-Type": "application/json",},
       body: JSON.stringify(uusPood),
     })
       .then((res) => res.json())
@@ -41,7 +51,6 @@ function App() {
   }
 
   function kustutaPood(index) {
-    setTimeout(() => {
       fetch("https://localhost:7056/api/Poodidi/kustuta/" + index, { method: "DELETE",
       })
         .then((res) => res.json())
@@ -49,7 +58,6 @@ function App() {
           setPoed(json);
           setFiltritudPoed(json);
         });
-    }, 1000);
   }
 
   function filtreeriPoed() {
@@ -82,7 +90,7 @@ function App() {
             <th>Sulgemine</th>
             <th>Kuulastuste</th>
             <th>Kustuta</th>
-            <th>Lisa kuulastuste</th>
+            <th>Lisa Kuulastuste</th>
           </tr>
         </thead>
         <tbody>
@@ -94,6 +102,9 @@ function App() {
               <td>{pood.kuulastusteArv}</td>
               <td>
                 <button onClick={() => kustutaPood(index)}>Kustuta</button>
+              </td>
+              <td>
+                <button onClick={() => Lisakuulastuse(pood.nimi)}>+</button>
               </td>
             </tr>
           ))}
