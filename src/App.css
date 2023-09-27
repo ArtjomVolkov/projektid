@@ -102,3 +102,42 @@ table td button:hover {
 table tr:nth-child(even) {
   background-color: #b6afaf;
 }
+
+.avatud-poed {
+  margin-top: 20px;
+}
+
+.avatud-poed h2 {
+  font-size: 24px;
+  margin-bottom: 10px;
+  color: #333;
+}
+
+.avatud-poed ul {
+  list-style: none;
+  padding: 0;
+}
+
+.avatud-pood {
+  background-color: #f8f8f8;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  padding: 10px;
+  margin-bottom: 10px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.avatud-pood p {
+  margin: 0;
+  color: #666;
+}
+
+.avatud-pood-item {
+  font-size: 18px;
+  margin-bottom: 5px;
+}
+
+.avatud-poed-empty {
+  font-size: 18px;
+  color: #888;
+}

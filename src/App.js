@@ -9,6 +9,9 @@ function App() {
   const sulgemineRef = useRef(); //pood.sulgemine
   const filterRef = useRef();
 
+  const [valitudAeg, setValitudAeg] = useState("");
+  const [avatudPoed, setAvatudPoed] = useState([]);
+
   useEffect(() => {
     fetch("https://localhost:7056/api/Poodidi")
       .then((res) => res.json())
@@ -48,17 +51,19 @@ function App() {
         setPoed(json);
         setFiltritudPoed(json);
       });
+      nimiRef.current.value = "";
+      avamineRef.current.value = "";
+      sulgemineRef.current.value = "";
   }
 
-  function kustutaPood(index) {
-      fetch("https://localhost:7056/api/Poodidi/kustuta/" + index, { method: "DELETE",
-      })
+  function kustutaPood(id) {
+    fetch("https://localhost:7056/api/Poodidi/kustuta/" + id, { method: "DELETE" })
         .then((res) => res.json())
         .then((json) => {
-          setPoed(json);
-          setFiltritudPoed(json);
+            setPoed(json);
+            setFiltritudPoed(json);
         });
-  }
+}
 
   function filtreeriPoed() {
     const filterTekst = filterRef.current.value.toLowerCase();
@@ -67,6 +72,65 @@ function App() {
     );
     setFiltritudPoed(filtreeritud);
   }
+
+  function naitaAvatudPoed() {
+    const valitudAegStr = prompt("Sisesta aeg (HH:MM):");
+
+    if (!valitudAegStr) {
+      alert("Aeg ei ole sisestatud.");
+      return;
+    }
+
+    const [tundStr, minutStr] = valitudAegStr.split(":");
+    const tund = parseInt(tundStr, 10);
+    const minut = parseInt(minutStr, 10);
+
+    if (isNaN(tund) || isNaN(minut)) {
+      alert("Vale aja formaat. Sisesta aeg kujul HH:MM.");
+      return;
+    }
+
+    fetch(`https://localhost:7056/api/Poodidi/lahtipood/${tund}/${minut}`)
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error(`Network response was not ok (Status: ${res.status})`);
+        }
+        return res.json();
+      })
+      .then((data) => {
+        if (data.length > 0) {
+          setAvatudPoed(data);
+        } else {
+          alert("Ühtegi poodi pole sel ajal lahti.");
+        }
+      })
+      .catch((error) => {
+        console.error('Error:', error);
+        alert("Error.");
+      });
+  }
+
+  function renderAvatudPoed() {
+    if (avatudPoed.length > 0) {
+      return (
+        <div className="avatud-poed">
+          <h2>Avatud poed:</h2>
+          <ul className="avatud-poed-list">
+            {avatudPoed.map((pood, index) => (
+              <li key={index} className="avatud-pood-item">
+                {pood}
+              </li>
+            ))}
+          </ul>
+        </div>
+      );
+    } else if (valitudAeg && avatudPoed.length === 0) {
+      return <p className="avatud-poed-empty">Ühtegi poodi pole sel ajal lahti.</p>;
+    } else {
+      return null;
+    }
+  }
+
   
 
   return (
@@ -83,6 +147,8 @@ function App() {
       </div>
       <label>Filtri:</label> <br />
         <input ref={filterRef} type="text" onChange={() => filtreeriPoed()} /> <br/>
+        <button onClick={naitaAvatudPoed}>Vaadake avatud kauplusi</button>
+        {renderAvatudPoed()}
       <table>
         <thead>
           <tr>
@@ -102,7 +168,7 @@ function App() {
               <td>{pood.sulgemine}</td>
               <td>{pood.kuulastusteArv}</td>
               <td>
-                <button onClick={() => kustutaPood(index)}>Kustuta</button>
+              <button onClick={() => kustutaPood(pood.id)}>Kustuta</button>
               </td>
               <td>
                 <button onClick={() => kylasta(pood.nimi)}>+</button>
