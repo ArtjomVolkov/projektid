@@ -18,10 +18,10 @@ function App() {
       });
   }, []);
 
-  function Lisakuulastuse(poodiNimi) {
+  function kylasta(poodiNimi) {
     var pood = poed.find((p) => p.nimi === poodiNimi);
     if (pood !== undefined) {
-      fetch(`https://localhost:7056/api/Poodidi/lisakuulastuse/${pood.nimi}`, {
+      fetch(`https://localhost:7056/api/Poodidi/kylasta/${pood.nimi}`, {
         method: "POST",
       })
         .then((res) => res.json())
@@ -67,6 +67,7 @@ function App() {
     );
     setFiltritudPoed(filtreeritud);
   }
+  
 
   return (
     <div className="App">
@@ -81,7 +82,7 @@ function App() {
         <br />
       </div>
       <label>Filtri:</label> <br />
-        <input ref={filterRef} type="text" onChange={() => filtreeriPoed()} />
+        <input ref={filterRef} type="text" onChange={() => filtreeriPoed()} /> <br/>
       <table>
         <thead>
           <tr>
@@ -104,7 +105,7 @@ function App() {
                 <button onClick={() => kustutaPood(index)}>Kustuta</button>
               </td>
               <td>
-                <button onClick={() => Lisakuulastuse(pood.nimi)}>+</button>
+                <button onClick={() => kylasta(pood.nimi)}>+</button>
               </td>
             </tr>
           ))}
