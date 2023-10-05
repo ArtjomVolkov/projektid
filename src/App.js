@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
+import { Document, Page, Text, Image,pdf, View, StyleSheet } from '@react-pdf/renderer';
+import { saveAs } from 'file-saver';
 import './App.css';
 
 function App() {
@@ -197,6 +199,87 @@ function App() {
     }
   }
 
+  const styles = StyleSheet.create({
+    page: {
+      flexDirection: 'row',
+      backgroundColor: 'white',
+      padding: 10,
+    },
+    content: {
+      flexGrow: 1,
+    },
+    header: {
+      fontSize: 18,
+      textAlign: 'center',
+      marginBottom: 10,
+    },
+    datetime: {
+      fontSize: 12,
+      position: 'absolute',
+      top: 10,
+      right: 80,
+    },
+    image: {
+      width: 140,
+      height: 100,
+      position: 'absolute',
+      top: 10,
+      left: 10,
+    },
+    table: {
+      marginLeft: 'auto',
+      marginRight: 'auto',
+      marginTop: 70, // Отступ от верхней части страницы
+      width: '80%', // Ширина таблицы
+      border: '1px',
+      bordercorner: '2px',
+      padding: '5px',
+    },
+  });
+
+  function generatePDF(poed) {
+    const currentDate = new Date().toLocaleString();
+  
+    return (
+      <Document>
+        <Page size="A4" style={styles.page}>
+          <Text style={styles.datetime}>{currentDate}</Text>
+          <Image style={styles.image} src="firm.jpg" />
+          <View style={styles.content}>
+            <Text style={styles.header}>Külastaja väljatrükk</Text>
+            <View style={styles.table}>
+              {poed.map((pood, index) => (
+                <View key={index}>
+                  <Text>Pood: {pood.nimi}</Text>
+                  <Text>Tööaeg: {pood.avamine} - {pood.sulgemine}</Text>
+                  <Text>KuulastusteArv: {pood.kuulastusteArv}</Text>
+                  <Text> </Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        </Page>
+      </Document>
+    );
+  }
+  
+  function printPDF(poed, filename) {
+    if (poed.length > 0) {
+      const pdfContent = generatePDF(poed);
+  
+      pdf(pdfContent)
+        .toBlob()
+        .then((blob) => {
+          const url = URL.createObjectURL(blob);
+          const printWindow = window.open(url);
+        });
+    } else {
+      alert("Error.");
+    }
+  }
+  
+  
+
   
 
   return (
@@ -215,6 +298,8 @@ function App() {
       <input ref={filterRef} type="text" onChange={() => filtreeriPoed()} /> <br />
       <button onClick={naitaAvatudPoed}>Vaadake avatud kauplusi</button>
       {renderAvatudPoed()}
+      <br/>
+      <button onClick={() => printPDF(poed)}>Print</button>
       <table>
         <thead>
           <tr>
@@ -257,7 +342,7 @@ function App() {
         {products.map((product, index) => (
           <ul key={index}>
             {product.title}: {product.price}€ -
-            <button onClick={() => makePayment(product.price)}>Купить</button>
+            <button onClick={() => makePayment(product.price)}>Osta</button>
           </ul>
         ))}
       </ul>
