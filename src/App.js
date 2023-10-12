@@ -146,64 +146,75 @@ const [sortDirectionKuulastuste, setSortDirectionKuulastuste] = useState('asc');
   }
   }
 
+  //---------Открывается диалоговое окно, где пользователю предлагается ввести время в формате HH:MM---------
   function naitaAvatudPoed() {
-    const valitudAegStr = prompt("Sisesta aeg (HH:MM):");
+    const valitudAegStr = prompt("Sisesta aeg (HH:MM):"); //Показывает диалоговое окно для ввода времени
 
+    // Проверка, было ли введено время
     if (!valitudAegStr) {
-      alert("Aeg ei ole sisestatud.");
-      return;
+        alert("Aeg ei ole sisestatud."); // Если время не было введено, выдаём сообщение ошибки и завершаем функцию
+        return;
     }
 
+    // Разбиваем введенное время на часы и минуты
     const [tundStr, minutStr] = valitudAegStr.split(":");
     const tund = parseInt(tundStr, 10);
     const minut = parseInt(minutStr, 10);
 
+    // Проверка корректности формата введенного времени
     if (isNaN(tund) || isNaN(minut)) {
-      alert("Vale aja formaat. Sisesta aeg kujul HH:MM.");
-      return;
+        alert("Vale aja formaat. Sisesta aeg kujul HH:MM."); // Если формат времени неверный, выводим сообщение ошибки и завершаем функцию
+        return;
     }
 
+    // Выполняем запрос к серверу, чтобы получить список открытых магазинов в указанное время
     fetch(`https://localhost:7056/api/Poodidi/lahtipood/${tund}/${minut}`)
-      .then((res) => {
-        if (!res.ok) {
-          throw new Error(`Network response was not ok (Status: ${res.status})`);
-        }
-        return res.json();
-      })
-      .then((data) => {
-        if (data.length > 0) {
-          setAvatudPoed(data);
-        } else {
-          alert("Ühtegi poodi pole sel ajal lahti.");
-        }
-      })
-      .catch((error) => {
-        console.error('Error:', error);
-        alert("Error.");
-      });
+        .then((res) => {
+            if (!res.ok) {
+                throw new Error(`Network response was not ok (Status: ${res.status})`);
+            }
+            return res.json();
+        })
+        .then((data) => {
+            // Если есть открытые магазины, сохраняем их в состояние
+            if (data.length > 0) {
+                setAvatudPoed(data);
+            } else {
+                alert("Ühtegi poodi pole sel ajal lahti."); // Если магазины закрыты, выводим сообщение
+            }
+        })
+        .catch((error) => {
+            console.error('Error:', error);
+            alert("Error."); // Вывод сообщения об ошибке
+        });
   }
 
+  //---------Показывает списком открытые магазины в определенное время---------
   function renderAvatudPoed() {
-    if (avatudPoed.length > 0) {
+  if (avatudPoed.length > 0) {
+      // Если есть открытые магазины, создаем список
       return (
-        <div className="avatud-poed">
-          <h2>Avatud poed:</h2>
-          <ul className="avatud-poed-list">
-            {avatudPoed.map((pood, index) => (
-              <li key={index} className="avatud-pood-item">
-                {pood}
-              </li>
-            ))}
-          </ul>
-        </div>
+          <div className="avatud-poed">
+              <h2>Avatud poed:</h2>
+              <ul className="avatud-poed-list">
+                  {avatudPoed.map((pood, index) => (
+                      <li key={index} className="avatud-pood-item">
+                          {pood}
+                      </li>
+                  ))}
+              </ul>
+          </div>
       );
-    } else if (valitudAeg && avatudPoed.length === 0) {
+  } else if (valitudAeg && avatudPoed.length === 0) {
+      // Если временной интервал выбран, но нет открытых магазинов, выводим сообщение об отсутствии открытых магазинов
       return <p className="avatud-poed-empty">Ühtegi poodi pole sel ajal lahti.</p>;
-    } else {
+  } else {
+      // В остальных случаях (когда временной интервал не выбран), возвращаем пустое значение
       return null;
-    }
   }
+}
 
+  //---------Стили для распечатки---------
   const styles = StyleSheet.create({
     page: {
       flexDirection: 'row',
@@ -242,9 +253,12 @@ const [sortDirectionKuulastuste, setSortDirectionKuulastuste] = useState('asc');
     },
   });
 
+  //---------Распечатка PDF---------
   function generatePDF(poed) {
+    // Получаем текущую дату и время
     const currentDate = new Date().toLocaleString();
-  
+
+    // Создаем структуру PDF-документа с использованием библиотеки React-PDF
     return (
       <Document>
         <Page size="A4" style={styles.page}>
@@ -267,77 +281,88 @@ const [sortDirectionKuulastuste, setSortDirectionKuulastuste] = useState('asc');
       </Document>
     );
   }
-  
+
+  //---------Сохранение PDF файла------------------
   function printPDF(poed, filename) {
+    // Проверяем, что есть данные для печати (магазины)
     if (poed.length > 0) {
-      const pdfContent = generatePDF(poed);
+        // Генерируем содержимое PDF-документа, используя функцию generatePDF
+        const pdfContent = generatePDF(poed);
   
-      pdf(pdfContent)
-        .toBlob()
-        .then((blob) => {
-          const url = URL.createObjectURL(blob);
-          const printWindow = window.open(url);
-        });
+        // Преобразуем содержимое PDF в Blob
+        pdf(pdfContent)
+            .toBlob()
+            .then((blob) => {
+                // Создаем URL для Blob
+                const url = URL.createObjectURL(blob);
+                // Открываем новое окно браузера для печати PDF
+                const printWindow = window.open(url);
+            });
     } else {
-      alert("Error.");
+        // Если нет данных для печати, выводим сообщение об ошибке
+        alert("Error.");
     }
-  }
-
-  //Сортировка магазинов по полю Nimi
-function sortPoedByNimi() {
-  const sortedPoed = [...filtritudPoed];
-  if (sortDirectionNimi === 'asc') {
-    sortedPoed.sort((a, b) => a.nimi.localeCompare(b.nimi));
-    setSortDirectionNimi('desc');
-  } else {
-    sortedPoed.sort((a, b) => b.nimi.localeCompare(a.nimi));
-    setSortDirectionNimi('asc');
-  }
-  setFiltritudPoed(sortedPoed);
 }
 
-//Сортировка магазинов по полю Avamine
-function sortPoedByAvamine() {
-  const sortedPoed = [...filtritudPoed];
-  if (sortDirectionAvamine === 'asc') {
-    sortedPoed.sort((a, b) => a.avamine.localeCompare(b.avamine));
-    setSortDirectionAvamine('desc');
-  } else {
-    sortedPoed.sort((a, b) => b.avamine.localeCompare(a.avamine));
-    setSortDirectionAvamine('asc');
+  //---------Сортировка магазинов по полю Nimi---------
+  function sortPoedByNimi() {
+    const sortedPoed = [...filtritudPoed];
+    if (sortDirectionNimi === 'asc') {
+      // Сортировка по возрастанию (asc) по полю Nimi
+      sortedPoed.sort((a, b) => a.nimi.localeCompare(b.nimi));
+      setSortDirectionNimi('desc'); // Устанавливаем направление сортировки на убывание
+    } else {
+      // Сортировка по убыванию (desc) по полю Nimi
+      sortedPoed.sort((a, b) => b.nimi.localeCompare(a.nimi));
+      setSortDirectionNimi('asc'); // Устанавливаем направление сортировки на возрастание
+    }
+    setFiltritudPoed(sortedPoed); // Устанавливаем отсортированный список магазинов
   }
-  setFiltritudPoed(sortedPoed);
-}
 
-//Сортировка магазинов по полю Sulgemine
-function sortPoedBySulgemine() {
-  const sortedPoed = [...filtritudPoed];
-  if (sortDirectionSulgemine === 'asc') {
-    sortedPoed.sort((a, b) => a.sulgemine.localeCompare(b.sulgemine));
-    setSortDirectionSulgemine('desc');
-  } else {
-    sortedPoed.sort((a, b) => b.sulgemine.localeCompare(a.sulgemine));
-    setSortDirectionSulgemine('asc');
+  //---------Сортировка магазинов по полю Avamine---------
+  function sortPoedByAvamine() {
+    const sortedPoed = [...filtritudPoed];
+    if (sortDirectionAvamine === 'asc') {
+      // Сортировка по возрастанию (asc) по полю Avamine
+      sortedPoed.sort((a, b) => a.avamine.localeCompare(b.avamine));
+      setSortDirectionAvamine('desc'); // Устанавливаем направление сортировки на убывание
+    } else {
+      // Сортировка по убыванию (desc) по полю Avamine
+      sortedPoed.sort((a, b) => b.avamine.localeCompare(a.avamine));
+      setSortDirectionAvamine('asc'); // Устанавливаем направление сортировки на возрастание
+    }
+    setFiltritudPoed(sortedPoed); // Устанавливаем отсортированный список магазинов
   }
-  setFiltritudPoed(sortedPoed);
-}
 
-//Сортировка магазинов по полю Kuulastuste
-function sortPoedByKuulastuste() {
-  const sortedPoed = [...filtritudPoed];
-  if (sortDirectionKuulastuste === 'asc') {
-    sortedPoed.sort((a, b) => a.kuulastusteArv - b.kuulastusteArv);
-    setSortDirectionKuulastuste('desc');
-  } else {
-    sortedPoed.sort((a, b) => b.kuulastusteArv - a.kuulastusteArv);
-    setSortDirectionKuulastuste('asc');
+  //---------Сортировка магазинов по полю Sulgemine---------
+  function sortPoedBySulgemine() {
+    const sortedPoed = [...filtritudPoed];
+    if (sortDirectionSulgemine === 'asc') {
+      // Сортировка по возрастанию (asc) по полю Sulgemine
+      sortedPoed.sort((a, b) => a.sulgemine.localeCompare(b.sulgemine));
+      setSortDirectionSulgemine('desc'); // Устанавливаем направление сортировки на убывание
+    } else {
+      // Сортировка по убыванию (desc) по полю Sulgemine
+      sortedPoed.sort((a, b) => b.sulgemine.localeCompare(a.sulgemine));
+      setSortDirectionSulgemine('asc'); // Устанавливаем направление сортировки на возрастание
+    }
+    setFiltritudPoed(sortedPoed); // Устанавливаем отсортированный список магазинов
   }
-  setFiltritudPoed(sortedPoed);
-}
 
-  
-  
-
+  //---------Сортировка магазинов по полю Kuulastuste---------
+  function sortPoedByKuulastuste() {
+    const sortedPoed = [...filtritudPoed];
+    if (sortDirectionKuulastuste === 'asc') {
+      // Сортировка по возрастанию (asc) по полю Kuulastuste
+      sortedPoed.sort((a, b) => a.kuulastusteArv - b.kuulastusteArv);
+      setSortDirectionKuulastuste('desc'); // Устанавливаем направление сортировки на убывание
+    } else {
+      // Сортировка по убыванию (desc) по полю Kuulastuste
+      sortedPoed.sort((a, b) => b.kuulastusteArv - a.kuulastusteArv);
+      setSortDirectionKuulastuste('asc'); // Устанавливаем направление сортировки на возрастание
+    }
+    setFiltritudPoed(sortedPoed); // Устанавливаем отсортированный список магазинов
+  }
   
 
   return (
@@ -345,9 +370,9 @@ function sortPoedByKuulastuste() {
       <div className="input">
         <label>Nimi:</label> <br />
         <input ref={nimiRef} type="text" maxLength={15} /> <br />
-        <label>Avamine (HH:MM):</label> <br />
+        <label>Avamine (HH:MM:SS):</label> <br />
         <input ref={avamineRef} type="text" /> <br />
-        <label>Sulgemine (HH:MM):</label> <br />
+        <label>Sulgemine (HH:MM:SS):</label> <br />
         <input ref={sulgemineRef} type="text" /> <br />
         <button onClick={() => lisaPood()}>Lisa Pood</button>
         <br />
