@@ -32,8 +32,16 @@ function App() {
   const openCartModal = () => {
     setIsCartModalOpen(true);
   }
-  // Создайте объект, чтобы отслеживать количество каждого товара в корзине
-  const [cartItems, setCartItems] = useState({});
+  //---------Проходит оплата или нет---------
+  const [PaymentConfirmation, setPaymentConfirmation] = useState(false);
+  const PaymentConfirmations = (confirmPayment) => {
+    if (confirmPayment) {
+      const total = calculateTotalPrice(cart);
+      makePayment(total);
+      setCart([]);
+    }
+    setPaymentConfirmation(false);
+  };
 
   useEffect(() => {
     fetch("https://localhost:7056/api/Poodidi")
@@ -43,7 +51,7 @@ function App() {
         setFiltritudPoed(json);
       });
   }, []);
-
+  
   //---------Добавление посетителей в определенный магазин---------
   function kylasta(poodiNimi) {
     var pood = poed.find((p) => p.nimi === poodiNimi); //пойск магазинов
@@ -58,7 +66,7 @@ function App() {
         });
     }
   }
-
+  
   //---------Добавление нового магазина---------
   function lisaPood() {
     //---------Создаем объект---------
@@ -373,17 +381,18 @@ function App() {
   }
 
   function addToCart(product) {
+    alert("Toode lisatud ostukorvi");
     setCart([...cart, product]);
   }
   
   function removeFromCart(product) {
   const itemIndex = cart.findIndex((item) => item.id === product.id);
-
   if (itemIndex !== -1) {
     // Создайте новый массив корзины, исключая элемент с заданным индексом
     const updatedCart = [...cart.slice(0, itemIndex), ...cart.slice(itemIndex + 1)];
     setCart(updatedCart);
   }
+  alert("Toode kustatud");
 }
 
   function calculateTotalPrice(cart) {
@@ -473,10 +482,22 @@ function App() {
               ))}
             </ul>
             <h2>Maksma: {calculateTotalPrice(cart)}€</h2>
-            <button onClick={() => {const total = calculateTotalPrice(cart);makePayment(total);setCart([]);}}>Maksa</button>
+            <button onClick={() => setPaymentConfirmation(true)}>Maksa</button>
           </div>
         </div>
       )}
+      {PaymentConfirmation && (
+  <div className="modal active">
+    <div className="modal-content">
+      <h2>Maksetõend</h2>
+      <p>Kas olete kindel, et soovite maksta?</p>
+      <div>
+        <button onClick={() => PaymentConfirmations(true)}>Ja</button>
+        <button onClick={() => PaymentConfirmations(false)}>Ei</button>
+      </div>
+    </div>
+  </div>
+)}
     </div>
   );
 }
