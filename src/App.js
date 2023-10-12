@@ -17,6 +17,11 @@ function App() {
   const [avatudPoed, setAvatudPoed] = useState([]);
   //---------Продукты магазина---------
   const [products, setProducts] = useState([]);
+//---------Сортировка магазинов---------
+const [sortDirectionNimi, setSortDirectionNimi] = useState('asc');
+const [sortDirectionAvamine, setSortDirectionAvamine] = useState('asc');
+const [sortDirectionSulgemine, setSortDirectionSulgemine] = useState('asc');
+const [sortDirectionKuulastuste, setSortDirectionKuulastuste] = useState('asc');
   //---------Модальное окно---------
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedStore, setSelectedStore] = useState(null);
@@ -277,6 +282,59 @@ function App() {
       alert("Error.");
     }
   }
+
+  //Сортировка магазинов по полю Nimi
+function sortPoedByNimi() {
+  const sortedPoed = [...filtritudPoed];
+  if (sortDirectionNimi === 'asc') {
+    sortedPoed.sort((a, b) => a.nimi.localeCompare(b.nimi));
+    setSortDirectionNimi('desc');
+  } else {
+    sortedPoed.sort((a, b) => b.nimi.localeCompare(a.nimi));
+    setSortDirectionNimi('asc');
+  }
+  setFiltritudPoed(sortedPoed);
+}
+
+//Сортировка магазинов по полю Avamine
+function sortPoedByAvamine() {
+  const sortedPoed = [...filtritudPoed];
+  if (sortDirectionAvamine === 'asc') {
+    sortedPoed.sort((a, b) => a.avamine.localeCompare(b.avamine));
+    setSortDirectionAvamine('desc');
+  } else {
+    sortedPoed.sort((a, b) => b.avamine.localeCompare(a.avamine));
+    setSortDirectionAvamine('asc');
+  }
+  setFiltritudPoed(sortedPoed);
+}
+
+//Сортировка магазинов по полю Sulgemine
+function sortPoedBySulgemine() {
+  const sortedPoed = [...filtritudPoed];
+  if (sortDirectionSulgemine === 'asc') {
+    sortedPoed.sort((a, b) => a.sulgemine.localeCompare(b.sulgemine));
+    setSortDirectionSulgemine('desc');
+  } else {
+    sortedPoed.sort((a, b) => b.sulgemine.localeCompare(a.sulgemine));
+    setSortDirectionSulgemine('asc');
+  }
+  setFiltritudPoed(sortedPoed);
+}
+
+//Сортировка магазинов по полю Kuulastuste
+function sortPoedByKuulastuste() {
+  const sortedPoed = [...filtritudPoed];
+  if (sortDirectionKuulastuste === 'asc') {
+    sortedPoed.sort((a, b) => a.kuulastusteArv - b.kuulastusteArv);
+    setSortDirectionKuulastuste('desc');
+  } else {
+    sortedPoed.sort((a, b) => b.kuulastusteArv - a.kuulastusteArv);
+    setSortDirectionKuulastuste('asc');
+  }
+  setFiltritudPoed(sortedPoed);
+}
+
   
   
 
@@ -286,10 +344,10 @@ function App() {
     <div className="App">
       <div className="input">
         <label>Nimi:</label> <br />
-        <input ref={nimiRef} type="text" /> <br />
-        <label>Avamine (HH:MM:SS):</label> <br />
+        <input ref={nimiRef} type="text" maxLength={15} /> <br />
+        <label>Avamine (HH:MM):</label> <br />
         <input ref={avamineRef} type="text" /> <br />
-        <label>Sulgemine (HH:MM:SS):</label> <br />
+        <label>Sulgemine (HH:MM):</label> <br />
         <input ref={sulgemineRef} type="text" /> <br />
         <button onClick={() => lisaPood()}>Lisa Pood</button>
         <br />
@@ -303,10 +361,10 @@ function App() {
       <table>
         <thead>
           <tr>
-            <th>Nimi</th>
-            <th>Avamine</th>
-            <th>Sulgemine</th>
-            <th>Kuulastuste</th>
+            <th><button onClick={sortPoedByNimi}>Nimi</button></th>
+            <th><button onClick={sortPoedByAvamine}>Avamine</button></th>
+            <th><button onClick={sortPoedBySulgemine}>Sulgemine</button></th>
+            <th><button onClick={sortPoedByKuulastuste}>Kuulastuste</button></th>
             <th>Kustuta</th>
             <th>Lisa Kuulastuste</th>
             <th>Tooted</th>
