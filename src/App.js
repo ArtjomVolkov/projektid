@@ -418,7 +418,7 @@ function App() {
       {renderAvatudPoed()}
       <br/>
       <button onClick={() => printPDF(poed)}>Print</button>
-      <button onClick={openCartModal}>Tootekorv</button>
+      <button onClick={openCartModal}>Ostukorv</button>
       <table>
         <thead>
           <tr>
@@ -472,7 +472,7 @@ function App() {
         <div className="modal active">
           <div className="modal-content">
             <span className="close" onClick={() => setIsCartModalOpen(false)}>&times;</span>
-            <h2>Tootekorv</h2>
+            <h2>Ostukorv</h2>
             <ul>
               {cart.map((product, index) => (
                 <ul key={index}>
