@@ -17,14 +17,23 @@ function App() {
   const [avatudPoed, setAvatudPoed] = useState([]);
   //---------Продукты магазина---------
   const [products, setProducts] = useState([]);
-//---------Сортировка магазинов---------
-const [sortDirectionNimi, setSortDirectionNimi] = useState('asc');
-const [sortDirectionAvamine, setSortDirectionAvamine] = useState('asc');
-const [sortDirectionSulgemine, setSortDirectionSulgemine] = useState('asc');
-const [sortDirectionKuulastuste, setSortDirectionKuulastuste] = useState('asc');
+  //---------Сортировка магазинов---------
+  const [sortDirectionNimi, setSortDirectionNimi] = useState('asc');
+  const [sortDirectionAvamine, setSortDirectionAvamine] = useState('asc');
+  const [sortDirectionSulgemine, setSortDirectionSulgemine] = useState('asc');
+  const [sortDirectionKuulastuste, setSortDirectionKuulastuste] = useState('asc');
   //---------Модальное окно---------
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedStore, setSelectedStore] = useState(null);
+  //---------Корзина товаров---------
+  const [cart, setCart] = useState([]);
+  const [selectedProducts, setSelectedProducts] = useState([]);
+  const [isCartModalOpen, setIsCartModalOpen] = useState(false);
+  const openCartModal = () => {
+    setIsCartModalOpen(true);
+  }
+  // Создайте объект, чтобы отслеживать количество каждого товара в корзине
+  const [cartItems, setCartItems] = useState({});
 
   useEffect(() => {
     fetch("https://localhost:7056/api/Poodidi")
@@ -101,9 +110,10 @@ const [sortDirectionKuulastuste, setSortDirectionKuulastuste] = useState('asc');
   }
 
   //---------Операция платежа---------
-  async function makePayment(sum) {
+  async function makePayment() {
     try {
-      const response = await fetch(`https://localhost:7056/Payment/${sum}`);
+      const total = calculateTotalPrice(cart);
+      const response = await fetch(`https://localhost:7056/Payment/${total}`);
       if (response.ok) {
         let paymentLink = await response.text();
         // Удаляем начальные и конечные двойные кавычки
@@ -128,12 +138,10 @@ const [sortDirectionKuulastuste, setSortDirectionKuulastuste] = useState('asc');
       const productsData = data.data;
       //Проверка есть ли товары
       if (productsData.length === 0) {
-        //Если товаров нет, то выводим сообщение об отсутствии товаров
         alert('Selles poes ei ole tooteid.');
-      } 
-      else {
-        //Открытие модального окна
+      } else {
         setProducts(productsData);
+        setSelectedProducts(productsData); // Сохраняем выбранные товары
         setIsModalOpen(true);
       }
     } else {
@@ -363,6 +371,24 @@ const [sortDirectionKuulastuste, setSortDirectionKuulastuste] = useState('asc');
     }
     setFiltritudPoed(sortedPoed); // Устанавливаем отсортированный список магазинов
   }
+
+  function addToCart(product) {
+    setCart([...cart, product]);
+  }
+  
+  function removeFromCart(product) {
+  const itemIndex = cart.findIndex((item) => item.id === product.id);
+
+  if (itemIndex !== -1) {
+    // Создайте новый массив корзины, исключая элемент с заданным индексом
+    const updatedCart = [...cart.slice(0, itemIndex), ...cart.slice(itemIndex + 1)];
+    setCart(updatedCart);
+  }
+}
+
+  function calculateTotalPrice(cart) {
+    return cart.reduce((total, product) => total + product.price, 0);
+  }
   
 
   return (
@@ -383,6 +409,7 @@ const [sortDirectionKuulastuste, setSortDirectionKuulastuste] = useState('asc');
       {renderAvatudPoed()}
       <br/>
       <button onClick={() => printPDF(poed)}>Print</button>
+      <button onClick={openCartModal}>Tootekorv</button>
       <table>
         <thead>
           <tr>
@@ -425,13 +452,31 @@ const [sortDirectionKuulastuste, setSortDirectionKuulastuste] = useState('asc');
         {products.map((product, index) => (
           <ul key={index}>
             {product.title}: {product.price}€ -
-            <button onClick={() => makePayment(product.price)}>Osta</button>
+            <button onClick={() => addToCart(product)}>Lisa korvi</button>
           </ul>
         ))}
       </ul>
     </div>
   </div>
 )}
+{isCartModalOpen  && (
+        <div className="modal active">
+          <div className="modal-content">
+            <span className="close" onClick={() => setIsCartModalOpen(false)}>&times;</span>
+            <h2>Tootekorv</h2>
+            <ul>
+              {cart.map((product, index) => (
+                <ul key={index}>
+                  {product.title}: {product.price}€
+                  <button onClick={() => removeFromCart(product)}>Kustuta</button>
+                </ul>
+              ))}
+            </ul>
+            <h2>Maksma: {calculateTotalPrice(cart)}€</h2>
+            <button onClick={() => {const total = calculateTotalPrice(cart);makePayment(total);setCart([]);}}>Maksa</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
