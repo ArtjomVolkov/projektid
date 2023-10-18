@@ -380,25 +380,45 @@ function App() {
     setFiltritudPoed(sortedPoed); // Устанавливаем отсортированный список магазинов
   }
 
+  //---------Добавление товаров в корзину---------
   function addToCart(product) {
+    const existingItemIndex = cart.findIndex((item) => item._id === product._id);
+    if (existingItemIndex !== -1) {
+      const updatedCart = [...cart];
+      updatedCart[existingItemIndex].quantity += 1;
+      setCart(updatedCart);
+    } else {
+      setCart([...cart, { ...product, quantity: 1 }]);
+    }
     alert("Toode lisatud ostukorvi");
-    setCart([...cart, product]);
   }
   
+  //---------Удаление товаров с корзины---------
   function removeFromCart(product) {
-  const itemIndex = cart.findIndex((item) => item.id === product.id);
-  if (itemIndex !== -1) {
-    // Создайте новый массив корзины, исключая элемент с заданным индексом
-    const updatedCart = [...cart.slice(0, itemIndex), ...cart.slice(itemIndex + 1)];
-    setCart(updatedCart);
+    const itemIndex = cart.findIndex((item) => item._id === product._id);
+    if (itemIndex !== -1) {
+      const updatedCart = [...cart];
+      if (updatedCart[itemIndex].quantity > 1) {
+        updatedCart[itemIndex].quantity -= 1;
+      } else {
+        updatedCart.splice(itemIndex, 1);
+      }
+      setCart(updatedCart);
+    }
+    alert("Toode kustatud");
   }
-  alert("Toode kustatud");
-}
 
-  function calculateTotalPrice(cart) {
-    return cart.reduce((total, product) => total + product.price, 0);
+  //---------Удаление всех товаров с корзины---------
+  function removeAllFromCart() {
+    setCart([]); // Очистить корзину
+    alert("Tooded kustatud");
   }
-  
+  //---------Калькулятор цены---------
+  function calculateTotalPrice(cart) {
+    return cart.reduce((total, product) => total + product.price * product.quantity, 0);
+  }
+
+
 
   return (
     <div className="App">
@@ -472,17 +492,32 @@ function App() {
         <div className="modal active">
           <div className="modal-content">
             <span className="close" onClick={() => setIsCartModalOpen(false)}>&times;</span>
-            <h2>Ostukorv</h2>
-            <ul>
-              {cart.map((product, index) => (
-                <ul key={index}>
-                  {product.title}: {product.price}€
-                  <button onClick={() => removeFromCart(product)}>Kustuta</button>
-                </ul>
-              ))}
-            </ul>
-            <h2>Maksma: {calculateTotalPrice(cart)}€</h2>
-            <button onClick={() => setPaymentConfirmation(true)}>Maksa</button>
+            <h1>Ostukorv</h1>
+            {calculateTotalPrice(cart) > 0 &&(
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Kogus</th>
+                      <th>Pealkiri</th>
+                      <th>Hind</th>
+                      <th>Kustuta</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {cart.map((product, index) => (
+                      <tr key={index}>
+                        <td>{product.quantity}</td>
+                        <td>{product.title}</td>
+                        <td>{product.price}€</td>
+                        <td><button onClick={() => removeFromCart(product)}>Kustuta</button></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>)}
+            {calculateTotalPrice(cart) == 0 &&(<text>Ostukorv on tühi</text>)}
+            {calculateTotalPrice(cart) > 0 &&(<h2>Maksma: {calculateTotalPrice(cart)}€</h2>)}
+            {calculateTotalPrice(cart) > 2 &&(<button onClick={removeAllFromCart}>Kustuta kõik</button>)}
+            {calculateTotalPrice(cart) > 0 &&(<button onClick={() => setPaymentConfirmation(true)}>Maksa</button>)}
           </div>
         </div>
       )}

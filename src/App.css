@@ -175,7 +175,8 @@ table tr:nth-child(even) {
   top: 10px;
   right: 10px;
   cursor: pointer;
-  font-size: 24px; /* Увеличьте размер кнопки закрытия */
+  width: 80px;
+  font-size: 30px; /* Увеличьте размер кнопки закрытия */
 }
 
 /* Стили для кнопок закрытия */
