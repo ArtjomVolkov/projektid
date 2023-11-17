@@ -2,13 +2,13 @@ import React, { useState, useEffect } from 'react';
 import './App.css';
 
 function App() {
-  const [isAdminLoggedIn, setAdminLoggedIn] = useState(false);
-  const [adminCredentials, setAdminCredentials] = useState({
-    username: 'a',
+  const [AdminLogged, AddAdminLogged] = useState(false);
+  const [adminloginpass, AddAdminloginpass] = useState({
+    login: 'a',
     password: 'a',
   });
-  function handleAdminLogout() {
-    setAdminLoggedIn(false);
+  function AdminLogout() {
+    AddAdminLogged(false);
   }
   const [newUser, AddNewUser] = useState({
     firstName: '',
@@ -22,34 +22,34 @@ function App() {
     entryTime: 0,
     status: 'В ожидание',
   });
-  const [newProject, setNewProject] = useState({
+  const [newProject, AddNewProject] = useState({
     projectName: '',
   });
 
-  const [users, setUsers] = useState([]);
-  const [tasks, setTasks] = useState([]);
-  const [projects, setProjects] = useState([]);
+  const [users, AddUsers] = useState([]);
+  const [tasks, AddTasks] = useState([]);
+  const [projects, AddProjects] = useState([]);
 
   useEffect(() => {
     // Загрузка данных о пользователях
     fetch('https://localhost:7269/api/User')
       .then((response) => response.json())
-      .then((data) => setUsers(data));
+      .then((data) => AddUsers(data));
 
     // Загрузка данных о задачах
     fetch('https://localhost:7269/api/Task')
       .then((response) => response.json())
-      .then((data) => setTasks(data));
+      .then((data) => AddTasks(data));
 
     // Загрузка данных о проектах
     fetch('https://localhost:7269/api/Project')
       .then((response) => response.json())
-      .then((data) => setProjects(data));
+      .then((data) => AddProjects(data));
   }, []);
 
   // Функции для добавления новых записей
   function addUser() {
-    if (!isAdminLoggedIn) {
+    if (!AdminLogged) {
       alert('Admin login required');
       return;
     }
@@ -66,7 +66,7 @@ function App() {
     })
       .then((response) => response.json())
       .then((data) => {
-        setUsers([...users, data]);
+        AddUsers([...users, data]);
         AddNewUser({
           firstName: '',
           lastName: '',
@@ -80,12 +80,8 @@ function App() {
   }
 
   async function addTask() {
-    if (!isAdminLoggedIn) {
-      alert('Admin login required');
-      return;
-    }
     if (!newTask.userId || !newTask.projectId || newTask.entryTime <= 0) {
-      alert('Please select user and project, and enter a valid positive entry time.');
+      alert('Пожалуйста, выберите пользователя и проект, а также введите действительное положительное время.');
       return;
     }
     const selectedUser = users.find((user) => user.userId === parseInt(newTask.userId, 10));
@@ -103,13 +99,8 @@ function App() {
         },
         body: JSON.stringify(taskData),
       });
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`HTTP error! Status: ${response.status}, Error: ${errorText}`);
-        throw new Error(`HTTP error! Status: ${response.status}`);
-      }
       const data = await response.json();
-      setTasks([...tasks, data]);
+      AddTasks([...tasks, data]);
       AddNewTask({
         userId: 0,
         projectId: 0,
@@ -117,13 +108,13 @@ function App() {
         status: 'В ожидание',
       });
     } catch (error) {
-      console.error('Error adding task:', error);
+      console.error('Error', error);
     }
   }
 
   function addProject() {
     if (!newProject.projectName) {
-      alert('Please enter a project name.');
+      alert('Пожалуйста, введите название проекта.');
       return;
     }
     fetch('https://localhost:7269/api/Project', {
@@ -135,8 +126,8 @@ function App() {
     })
       .then((response) => response.json())
       .then((data) => {
-        setProjects([...projects, data]);
-        setNewProject({
+        AddProjects([...projects, data]);
+        AddNewProject({
           projectName: '',
         });
       });
@@ -146,14 +137,13 @@ function App() {
     fetch('https://localhost:7269/api/User/' + userId, { method: 'DELETE' })
       .then((res) => {
         if (res.ok) {
-          // The response for a successful DELETE request may not be JSON, so just check if it's okay
-          setUsers(users.filter((user) => user.userId !== userId));
+          AddUsers(users.filter((user) => user.userId !== userId));
         } else {
-          console.error(`Error deleting user. Status: ${res.status}`);
+          console.error(`Error deleting user`);
         }
       })
       .catch((error) => {
-        console.error('Error deleting user:', error);
+        console.error('Error', error);
       });
   }
 
@@ -161,13 +151,13 @@ function App() {
     fetch('https://localhost:7269/api/Task/' + taskId, { method: 'DELETE' })
       .then((res) => {
         if (res.ok) {
-          setTasks(tasks.filter((task) => task.taskId !== taskId));
+          AddTasks(tasks.filter((task) => task.taskId !== taskId));
         } else {
-          console.error(`Error deleting task. Status: ${res.status}`);
+          console.error(`Error deleting task.`);
         }
       })
       .catch((error) => {
-        console.error('Error deleting task:', error);
+        console.error('Error', error);
       });
   }
 
@@ -175,13 +165,13 @@ function App() {
     fetch('https://localhost:7269/api/Project/' + projectId, { method: 'DELETE' })
       .then((res) => {
         if (res.ok) {
-          setProjects(projects.filter((project) => project.projectId !== projectId));
+          AddProjects(projects.filter((project) => project.projectId !== projectId));
         } else {
-          console.error(`Error deleting project. Status: ${res.status}`);
+          console.error(`Error deleting project.`);
         }
       })
       .catch((error) => {
-        console.error('Error deleting project:', error);
+        console.error('Error', error);
       });
   }
 
@@ -218,7 +208,7 @@ function App() {
                 console.error(`HTTP error! Status: ${response.status}, Error: ${errorText}`);
                 throw new Error(`HTTP error! Status: ${response.status}`);
             } else {
-                setTasks(updatedTasks);
+              AddTasks(updatedTasks);
             }
         })
         .catch((error) => {
@@ -241,12 +231,12 @@ function App() {
 
 
   function AdminLogin() {
-    const [username, setUsername] = useState('');
+    const [login, setUsername] = useState('');
     const [password, setPassword] = useState('');
 
     const handleLogin = () => {
-      if (username === adminCredentials.username && password === adminCredentials.password) {
-        setAdminLoggedIn(true);
+      if (login === adminloginpass.login && password === adminloginpass.password) {
+        AddAdminLogged(true);
       } else {
         alert('Invalid credentials');
       }
@@ -254,12 +244,12 @@ function App() {
 
     return (
       <div className='Admin'>
-        <h2>Admin Login</h2>
-        <label>Username:</label>
-        <input type='text' value={username} onChange={(e) => setUsername(e.target.value)} />
-        <label>Password:</label>
+        <h2>Вход администатора</h2>
+        <label>Логин:</label>
+        <input type='text' value={login} onChange={(e) => setUsername(e.target.value)} />
+        <label>Пароль:</label>
         <input type='password' value={password} onChange={(e) => setPassword(e.target.value)} />
-        <button onClick={handleLogin}>Login</button>
+        <button onClick={handleLogin}>Войти</button>
       </div>
     );
   }
@@ -271,7 +261,7 @@ function App() {
       <h2>Добавить проект</h2>
       <div>
       <label>Название проекта:</label>
-      <input type="text" placeholder="Название проекта" value={newProject.projectName} onChange={(e) => setNewProject({ ...newProject, projectName: e.target.value })}/>
+      <input type="text" placeholder="Название проекта" value={newProject.projectName} onChange={(e) => AddNewProject({ ...newProject, projectName: e.target.value })}/>
       <button onClick={() => addProject()}>Добавить проект</button>
       </div>
       <h2>Проекты</h2>
@@ -434,7 +424,7 @@ function App() {
           <tr>
             <th>Проект ID</th>
             <th>Название проекта</th>
-            {isAdminLoggedIn && <th>Действие</th>}
+            {AdminLogged && <th>Действие</th>}
           </tr>
         </thead>
         <tbody>
@@ -442,7 +432,7 @@ function App() {
             <tr key={index}>
               <td>{project.projectId}</td>
               <td>{project.projectName}</td>
-              {isAdminLoggedIn && (
+              {AdminLogged && (
               <td>
               <button onClick={() => deleteProject(project.projectId)}>Удалить</button>
               </td>
@@ -451,7 +441,7 @@ function App() {
           ))}
         </tbody>
       </table>
-      {isAdminLoggedIn && (
+      {AdminLogged && (
       <div>
         <h2>Задачи</h2>
         <table>
@@ -490,7 +480,7 @@ function App() {
       </div>
     )}
 
-{isAdminLoggedIn && (
+{AdminLogged && (
         <div>
       <h2>Пользователи</h2>
       <table>
@@ -528,13 +518,19 @@ function App() {
   
   return (
     <div className='App'>
-      {isAdminLoggedIn ? (
+      {AdminLogged ? (
         <div>
-          <button onClick={handleAdminLogout}>Logout</button>
+          <header>Панель администатора.</header>
+          <button onClick={AdminLogout}>Выйти</button>
           <AdminDashboard />
+          <footer>Artjom Volkov TARpv21</footer>
         </div>
       ) : (
-        <UserDashboard />
+        <div>
+          <header>Приложение для определения сроков выполнения проектов.</header>
+          <UserDashboard />
+          <footer>Artjom Volkov TARpv21</footer>
+        </div>
       )}
     </div>
   );

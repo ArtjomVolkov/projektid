@@ -157,3 +157,16 @@ body {
       width: 100%;
     }
   }
+
+  /* Стили для header */
+  header {
+    font-size: 40px;
+    padding: 10px;
+    text-align: center;
+  }
+
+  /* Стили для footer */
+  footer {
+    padding: 10px; 
+    text-align: right;
+  }
