@@ -1,538 +1,541 @@
-import { useEffect, useRef, useState } from 'react';
-import { Document, Page, Text, Image,pdf, View, StyleSheet } from '@react-pdf/renderer';
-import { saveAs } from 'file-saver';
+import React, { useState, useEffect } from 'react';
 import './App.css';
 
 function App() {
-  //---------Всё для pood---------
-  const [poed, setPoed] = useState([]);
-  const [filtritudPoed, setFiltritudPoed] = useState([]);
-  const nimiRef = useRef(); //pood.nimi
-  const avamineRef = useRef(); //pood.avamine
-  const sulgemineRef = useRef(); //pood.sulgemine
-  //---------Фильтр---------
-  const filterRef = useRef();
-  //---------Проверка на время работы магазинов---------
-  const [valitudAeg, setValitudAeg] = useState("");
-  const [avatudPoed, setAvatudPoed] = useState([]);
-  //---------Продукты магазина---------
-  const [products, setProducts] = useState([]);
-  //---------Сортировка магазинов---------
-  const [sortDirectionNimi, setSortDirectionNimi] = useState('asc');
-  const [sortDirectionAvamine, setSortDirectionAvamine] = useState('asc');
-  const [sortDirectionSulgemine, setSortDirectionSulgemine] = useState('asc');
-  const [sortDirectionKuulastuste, setSortDirectionKuulastuste] = useState('asc');
-  //---------Модальное окно---------
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedStore, setSelectedStore] = useState(null);
-  //---------Корзина товаров---------
-  const [cart, setCart] = useState([]);
-  const [selectedProducts, setSelectedProducts] = useState([]);
-  const [isCartModalOpen, setIsCartModalOpen] = useState(false);
-  const openCartModal = () => {
-    setIsCartModalOpen(true);
+  const [isAdminLoggedIn, setAdminLoggedIn] = useState(false);
+  const [adminCredentials, setAdminCredentials] = useState({
+    username: 'a',
+    password: 'a',
+  });
+  function handleAdminLogout() {
+    setAdminLoggedIn(false);
   }
-  //---------Проходит оплата или нет---------
-  const [PaymentConfirmation, setPaymentConfirmation] = useState(false);
-  const PaymentConfirmations = (confirmPayment) => {
-    if (confirmPayment) {
-      const total = calculateTotalPrice(cart);
-      makePayment(total);
-      setCart([]);
-    }
-    setPaymentConfirmation(false);
-  };
+  const [newUser, AddNewUser] = useState({
+    firstName: '',
+    lastName: '',
+    role: '',
+    profession: '',
+  });
+  const [newTask, AddNewTask] = useState({
+    userId: 0,
+    projectId: 0,
+    entryTime: 0,
+    status: 'В ожидание',
+  });
+  const [newProject, setNewProject] = useState({
+    projectName: '',
+  });
+
+  const [users, setUsers] = useState([]);
+  const [tasks, setTasks] = useState([]);
+  const [projects, setProjects] = useState([]);
 
   useEffect(() => {
-    fetch("https://localhost:7056/api/Poodidi")
-      .then((res) => res.json())
-      .then((json) => {
-        setPoed(json);
-        setFiltritudPoed(json);
-      });
+    // Загрузка данных о пользователях
+    fetch('https://localhost:7269/api/User')
+      .then((response) => response.json())
+      .then((data) => setUsers(data));
+
+    // Загрузка данных о задачах
+    fetch('https://localhost:7269/api/Task')
+      .then((response) => response.json())
+      .then((data) => setTasks(data));
+
+    // Загрузка данных о проектах
+    fetch('https://localhost:7269/api/Project')
+      .then((response) => response.json())
+      .then((data) => setProjects(data));
   }, []);
-  
-  //---------Добавление посетителей в определенный магазин---------
-  function kylasta(poodiNimi) {
-    var pood = poed.find((p) => p.nimi === poodiNimi); //пойск магазинов
-    if (pood !== undefined) {
-      fetch(`https://localhost:7056/api/Poodidi/kylasta/${pood.nimi}`, {
-        method: "POST",
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          pood.kuulastusteArv = data; // Обновление количество посетителей
-          setPoed([...poed]); // Обновление новых данных
-        });
+
+  // Функции для добавления новых записей
+  function addUser() {
+    if (!isAdminLoggedIn) {
+      alert('Admin login required');
+      return;
     }
-  }
-  
-  //---------Добавление нового магазина---------
-  function lisaPood() {
-    //---------Создаем объект---------
-    const uusPood = {
-      nimi: nimiRef.current.value,          //Название магазина
-      avamine: avamineRef.current.value,    //Время открытия
-      sulgemine: sulgemineRef.current.value, //Время закрытия
-      kuulastusteArv: 0,                    //Количество посетителей
-    };
-    fetch("https://localhost:7056/api/Poodidi/lisa", {
-      method: "POST",
+    if (!newUser.firstName || !newUser.lastName) {
+      alert('Please enter both first name and last name.');
+      return;
+    }
+    fetch('https://localhost:7269/api/User', {
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
       },
-      body: JSON.stringify(uusPood),
+      body: JSON.stringify(newUser),
     })
-      .then((res) => res.json()) 
-      .then((json) => {
-        setPoed(json); //Обновление списка всех магазинов
-        setFiltritudPoed(json); //Обновление списка отфильтрованных магазинов
-      });
-  
-    //---------Отчистка формы заполнения---------
-    nimiRef.current.value = "";
-    avamineRef.current.value = "";
-    sulgemineRef.current.value = "";
-  }
-
-  //---------Удаление магазина---------
-  function kustutaPood(id) {
-    fetch("https://localhost:7056/api/Poodidi/kustuta/" + id, { method: "DELETE" })
-        .then((res) => res.json())
-        .then((json) => {
-            setPoed(json);
-            setFiltritudPoed(json);
+      .then((response) => response.json())
+      .then((data) => {
+        setUsers([...users, data]);
+        AddNewUser({
+          firstName: '',
+          lastName: '',
+          role: 'Developer',
+          profession: 'Software Engineer',
         });
+      })
+      .catch((error) => {
+        console.error('Error adding user:', error);
+      });
   }
 
-  //---------Пойск магазина по имени---------
-  function filtreeriPoed() {
-    //Получаемый текст из поля фильтр образуем в нижний регистр
-    const filterTekst = filterRef.current.value.toLowerCase();
-    //Фильтр магазина
-    const filtreeritud = poed.filter((pood) =>
-      pood.nimi.toLowerCase().includes(filterTekst)
-    );
-    //Новый список магазинов, соответствующий фильтру
-    setFiltritudPoed(filtreeritud);
-  }
-
-  //---------Операция платежа---------
-  async function makePayment() {
-    try {
-      const total = calculateTotalPrice(cart);
-      const response = await fetch(`https://localhost:7056/Payment/${total}`);
-      if (response.ok) {
-        let paymentLink = await response.text();
-        // Удаляем начальные и конечные двойные кавычки
-        paymentLink = paymentLink.replace(/^"|"$/g, '');
-        window.open(paymentLink, '_blank'); // Открыть ссылку в новой вкладке
-      } else {
-        console.error('Payment failed.');
-      }
-    } catch (error) {
-      console.error('Error making payment:', error);
+  async function addTask() {
+    if (!isAdminLoggedIn) {
+      alert('Admin login required');
+      return;
     }
-  }
-
-  //---------Запрос товаров из API и отображение в модальном окне---------
-  async function modalwindow() {
+    if (!newTask.userId || !newTask.projectId || newTask.entryTime <= 0) {
+      alert('Please select user and project, and enter a valid positive entry time.');
+      return;
+    }
+    const selectedUser = users.find((user) => user.userId === parseInt(newTask.userId, 10));
+    const taskData = {
+      entryTime: newTask.entryTime,
+      status: newTask.status,
+      userId: selectedUser.userId,
+      projectId: newTask.projectId,
+    };
     try {
-      //Получаем случайное число от 1 до 5 для выбора страницы товаров
-      const nrd = Math.floor(Math.random()*5)+1;
-      const response = await fetch(`https://api.storerestapi.com/products?limit=4&page=${nrd}`);
-      if (response.ok) {
+      const response = await fetch('https://localhost:7269/api/Task', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(taskData),
+      });
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`HTTP error! Status: ${response.status}, Error: ${errorText}`);
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
       const data = await response.json();
-      const productsData = data.data;
-      //Проверка есть ли товары
-      if (productsData.length === 0) {
-        alert('Selles poes ei ole tooteid.');
-      } else {
-        setProducts(productsData);
-        setSelectedProducts(productsData); // Сохраняем выбранные товары
-        setIsModalOpen(true);
-      }
-    } else {
-      //Ошибка в консоль
-      console.error('Viga kauba kättesaamisel.');
+      setTasks([...tasks, data]);
+      AddNewTask({
+        userId: 0,
+        projectId: 0,
+        entryTime: 0,
+        status: 'В ожидание',
+      });
+    } catch (error) {
+      console.error('Error adding task:', error);
     }
-  } catch (error) {
-    //Ошибка при обработе данных в консоль
-    console.error('Viga kauba kättesaamisel:', error);
-  }
   }
 
-  //---------Открывается диалоговое окно, где пользователю предлагается ввести время в формате HH:MM---------
-  function naitaAvatudPoed() {
-    const valitudAegStr = prompt("Sisesta aeg (HH:MM):"); //Показывает диалоговое окно для ввода времени
+  function addProject() {
+    if (!newProject.projectName) {
+      alert('Please enter a project name.');
+      return;
+    }
+    fetch('https://localhost:7269/api/Project', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(newProject),
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        setProjects([...projects, data]);
+        setNewProject({
+          projectName: '',
+        });
+      });
+  }
 
-    // Проверка, было ли введено время
-    if (!valitudAegStr) {
-        alert("Aeg ei ole sisestatud."); // Если время не было введено, выдаём сообщение ошибки и завершаем функцию
+  function deleteUser(userId) {
+    fetch('https://localhost:7269/api/User/' + userId, { method: 'DELETE' })
+      .then((res) => {
+        if (res.ok) {
+          // The response for a successful DELETE request may not be JSON, so just check if it's okay
+          setUsers(users.filter((user) => user.userId !== userId));
+        } else {
+          console.error(`Error deleting user. Status: ${res.status}`);
+        }
+      })
+      .catch((error) => {
+        console.error('Error deleting user:', error);
+      });
+  }
+
+  function deleteTask(taskId) {
+    fetch('https://localhost:7269/api/Task/' + taskId, { method: 'DELETE' })
+      .then((res) => {
+        if (res.ok) {
+          setTasks(tasks.filter((task) => task.taskId !== taskId));
+        } else {
+          console.error(`Error deleting task. Status: ${res.status}`);
+        }
+      })
+      .catch((error) => {
+        console.error('Error deleting task:', error);
+      });
+  }
+
+  function deleteProject(projectId) {
+    fetch('https://localhost:7269/api/Project/' + projectId, { method: 'DELETE' })
+      .then((res) => {
+        if (res.ok) {
+          setProjects(projects.filter((project) => project.projectId !== projectId));
+        } else {
+          console.error(`Error deleting project. Status: ${res.status}`);
+        }
+      })
+      .catch((error) => {
+        console.error('Error deleting project:', error);
+      });
+  }
+
+  function confirmTask(taskId) {
+    const taskToUpdate = tasks.find((task) => task.taskId === taskId);
+
+    if (!taskToUpdate) {
+        console.error(`Task with ID ${taskId} not found.`);
         return;
     }
 
-    // Разбиваем введенное время на часы и минуты
-    const [tundStr, minutStr] = valitudAegStr.split(":");
-    const tund = parseInt(tundStr, 10);
-    const minut = parseInt(minutStr, 10);
+    const { projectId, userId,entryTime } = taskToUpdate;
 
-    // Проверка корректности формата введенного времени
-    if (isNaN(tund) || isNaN(minut)) {
-        alert("Vale aja formaat. Sisesta aeg kujul HH:MM."); // Если формат времени неверный, выводим сообщение ошибки и завершаем функцию
-        return;
-    }
+    const updatedTasks = tasks.map((task) =>
+        task.taskId === taskId ? { ...task, status: 'подтвержден' } : task
+    );
 
-    // Выполняем запрос к серверу, чтобы получить список открытых магазинов в указанное время
-    fetch(`https://localhost:7056/api/Poodidi/lahtipood/${tund}/${minut}`)
-        .then((res) => {
-            if (!res.ok) {
-                throw new Error(`Network response was not ok (Status: ${res.status})`);
-            }
-            return res.json();
-        })
-        .then((data) => {
-            // Если есть открытые магазины, сохраняем их в состояние
-            if (data.length > 0) {
-                setAvatudPoed(data);
+    fetch(`https://localhost:7269/api/Task/${taskId}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            taskId: taskId,
+            status: 'подтвержден',
+            entryTime: entryTime,
+            projectId: projectId,
+            userId: userId,
+        }),
+    })
+        .then(async (response) => {
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error(`HTTP error! Status: ${response.status}, Error: ${errorText}`);
+                throw new Error(`HTTP error! Status: ${response.status}`);
             } else {
-                alert("Ühtegi poodi pole sel ajal lahti."); // Если магазины закрыты, выводим сообщение
+                setTasks(updatedTasks);
             }
         })
         .catch((error) => {
-            console.error('Error:', error);
-            alert("Error."); // Вывод сообщения об ошибке
+            console.error('Error updating task status:', error);
         });
   }
 
-  //---------Показывает списком открытые магазины в определенное время---------
-  function renderAvatudPoed() {
-  if (avatudPoed.length > 0) {
-      // Если есть открытые магазины, создаем список
-      return (
-          <div className="avatud-poed">
-              <h2>Avatud poed:</h2>
-              <ul className="avatud-poed-list">
-                  {avatudPoed.map((pood, index) => (
-                      <li key={index} className="avatud-pood-item">
-                          {pood}
-                      </li>
-                  ))}
-              </ul>
-          </div>
-      );
-  } else if (valitudAeg && avatudPoed.length === 0) {
-      // Если временной интервал выбран, но нет открытых магазинов, выводим сообщение об отсутствии открытых магазинов
-      return <p className="avatud-poed-empty">Ühtegi poodi pole sel ajal lahti.</p>;
-  } else {
-      // В остальных случаях (когда временной интервал не выбран), возвращаем пустое значение
-      return null;
-  }
-}
 
-  //---------Стили для распечатки---------
-  const styles = StyleSheet.create({
-    page: {
-      flexDirection: 'row',
-      backgroundColor: 'white',
-      padding: 10,
-    },
-    content: {
-      flexGrow: 1,
-    },
-    header: {
-      fontSize: 18,
-      textAlign: 'center',
-      marginBottom: 10,
-    },
-    datetime: {
-      fontSize: 12,
-      position: 'absolute',
-      top: 10,
-      right: 80,
-    },
-    image: {
-      width: 140,
-      height: 100,
-      position: 'absolute',
-      top: 10,
-      left: 10,
-    },
-    table: {
-      marginLeft: 'auto',
-      marginRight: 'auto',
-      marginTop: 70, // Отступ от верхней части страницы
-      width: '80%', // Ширина таблицы
-      border: '1px',
-      bordercorner: '2px',
-      padding: '5px',
-    },
-  });
 
-  //---------Распечатка PDF---------
-  function generatePDF(poed) {
-    // Получаем текущую дату и время
-    const currentDate = new Date().toLocaleString();
+  
 
-    // Создаем структуру PDF-документа с использованием библиотеки React-PDF
+
+
+
+
+
+
+
+
+
+
+  function AdminLogin() {
+    const [username, setUsername] = useState('');
+    const [password, setPassword] = useState('');
+
+    const handleLogin = () => {
+      if (username === adminCredentials.username && password === adminCredentials.password) {
+        setAdminLoggedIn(true);
+      } else {
+        alert('Invalid credentials');
+      }
+    };
+
     return (
-      <Document>
-        <Page size="A4" style={styles.page}>
-          <Text style={styles.datetime}>{currentDate}</Text>
-          <Image style={styles.image} src="firm.jpg" />
-          <View style={styles.content}>
-            <Text style={styles.header}>Külastaja väljatrükk</Text>
-            <View style={styles.table}>
-              {poed.map((pood, index) => (
-                <View key={index}>
-                  <Text>Pood: {pood.nimi}</Text>
-                  <Text>Tööaeg: {pood.avamine} - {pood.sulgemine}</Text>
-                  <Text>KuulastusteArv: {pood.kuulastusteArv}</Text>
-                  <Text> </Text>
-                </View>
-              ))}
-            </View>
-          </View>
-        </Page>
-      </Document>
+      <div className='Admin'>
+        <h2>Admin Login</h2>
+        <label>Username:</label>
+        <input type='text' value={username} onChange={(e) => setUsername(e.target.value)} />
+        <label>Password:</label>
+        <input type='password' value={password} onChange={(e) => setPassword(e.target.value)} />
+        <button onClick={handleLogin}>Login</button>
+      </div>
     );
   }
 
-  //---------Сохранение PDF файла------------------
-  function printPDF(poed, filename) {
-    // Проверяем, что есть данные для печати (магазины)
-    if (poed.length > 0) {
-        // Генерируем содержимое PDF-документа, используя функцию generatePDF
-        const pdfContent = generatePDF(poed);
-  
-        // Преобразуем содержимое PDF в Blob
-        pdf(pdfContent)
-            .toBlob()
-            .then((blob) => {
-                // Создаем URL для Blob
-                const url = URL.createObjectURL(blob);
-                // Открываем новое окно браузера для печати PDF
-                const printWindow = window.open(url);
-            });
-    } else {
-        // Если нет данных для печати, выводим сообщение об ошибке
-        alert("Error.");
-    }
-}
-
-  //---------Сортировка магазинов по полю Nimi---------
-  function sortPoedByNimi() {
-    const sortedPoed = [...filtritudPoed];
-    if (sortDirectionNimi === 'asc') {
-      // Сортировка по возрастанию (asc) по полю Nimi
-      sortedPoed.sort((a, b) => a.nimi.localeCompare(b.nimi));
-      setSortDirectionNimi('desc'); // Устанавливаем направление сортировки на убывание
-    } else {
-      // Сортировка по убыванию (desc) по полю Nimi
-      sortedPoed.sort((a, b) => b.nimi.localeCompare(a.nimi));
-      setSortDirectionNimi('asc'); // Устанавливаем направление сортировки на возрастание
-    }
-    setFiltritudPoed(sortedPoed); // Устанавливаем отсортированный список магазинов
-  }
-
-  //---------Сортировка магазинов по полю Avamine---------
-  function sortPoedByAvamine() {
-    const sortedPoed = [...filtritudPoed];
-    if (sortDirectionAvamine === 'asc') {
-      // Сортировка по возрастанию (asc) по полю Avamine
-      sortedPoed.sort((a, b) => a.avamine.localeCompare(b.avamine));
-      setSortDirectionAvamine('desc'); // Устанавливаем направление сортировки на убывание
-    } else {
-      // Сортировка по убыванию (desc) по полю Avamine
-      sortedPoed.sort((a, b) => b.avamine.localeCompare(a.avamine));
-      setSortDirectionAvamine('asc'); // Устанавливаем направление сортировки на возрастание
-    }
-    setFiltritudPoed(sortedPoed); // Устанавливаем отсортированный список магазинов
-  }
-
-  //---------Сортировка магазинов по полю Sulgemine---------
-  function sortPoedBySulgemine() {
-    const sortedPoed = [...filtritudPoed];
-    if (sortDirectionSulgemine === 'asc') {
-      // Сортировка по возрастанию (asc) по полю Sulgemine
-      sortedPoed.sort((a, b) => a.sulgemine.localeCompare(b.sulgemine));
-      setSortDirectionSulgemine('desc'); // Устанавливаем направление сортировки на убывание
-    } else {
-      // Сортировка по убыванию (desc) по полю Sulgemine
-      sortedPoed.sort((a, b) => b.sulgemine.localeCompare(a.sulgemine));
-      setSortDirectionSulgemine('asc'); // Устанавливаем направление сортировки на возрастание
-    }
-    setFiltritudPoed(sortedPoed); // Устанавливаем отсортированный список магазинов
-  }
-
-  //---------Сортировка магазинов по полю Kuulastuste---------
-  function sortPoedByKuulastuste() {
-    const sortedPoed = [...filtritudPoed];
-    if (sortDirectionKuulastuste === 'asc') {
-      // Сортировка по возрастанию (asc) по полю Kuulastuste
-      sortedPoed.sort((a, b) => a.kuulastusteArv - b.kuulastusteArv);
-      setSortDirectionKuulastuste('desc'); // Устанавливаем направление сортировки на убывание
-    } else {
-      // Сортировка по убыванию (desc) по полю Kuulastuste
-      sortedPoed.sort((a, b) => b.kuulastusteArv - a.kuulastusteArv);
-      setSortDirectionKuulastuste('asc'); // Устанавливаем направление сортировки на возрастание
-    }
-    setFiltritudPoed(sortedPoed); // Устанавливаем отсортированный список магазинов
-  }
-
-  //---------Добавление товаров в корзину---------
-  function addToCart(product) {
-    const existingItemIndex = cart.findIndex((item) => item._id === product._id);
-    if (existingItemIndex !== -1) {
-      const updatedCart = [...cart];
-      updatedCart[existingItemIndex].quantity += 1;
-      setCart(updatedCart);
-    } else {
-      setCart([...cart, { ...product, quantity: 1 }]);
-    }
-    alert("Toode lisatud ostukorvi");
-  }
-  
-  //---------Удаление товаров с корзины---------
-  function removeFromCart(product) {
-    const itemIndex = cart.findIndex((item) => item._id === product._id);
-    if (itemIndex !== -1) {
-      const updatedCart = [...cart];
-      if (updatedCart[itemIndex].quantity > 1) {
-        updatedCart[itemIndex].quantity -= 1;
-      } else {
-        updatedCart.splice(itemIndex, 1);
-      }
-      setCart(updatedCart);
-    }
-    alert("Toode kustatud");
-  }
-
-  //---------Удаление всех товаров с корзины---------
-  function removeAllFromCart() {
-    setCart([]); // Очистить корзину
-    alert("Tooded kustatud");
-  }
-  //---------Калькулятор цены---------
-  function calculateTotalPrice(cart) {
-    return cart.reduce((total, product) => total + product.price * product.quantity, 0);
-  }
-
-
-
-  return (
-    <div className="App">
-      <div className="input">
-        <label>Nimi:</label> <br />
-        <input ref={nimiRef} type="text" maxLength={15} /> <br />
-        <label>Avamine (HH:MM:SS):</label> <br />
-        <input ref={avamineRef} type="text" /> <br />
-        <label>Sulgemine (HH:MM:SS):</label> <br />
-        <input ref={sulgemineRef} type="text" /> <br />
-        <button onClick={() => lisaPood()}>Lisa Pood</button>
-        <br />
+  function UserDashboard() {
+    return(
+      <div>
+        <AdminLogin />
+      <h2>Добавить проект</h2>
+      <div>
+      <label>Название проекта:</label>
+      <input type="text" placeholder="Название проекта" value={newProject.projectName} onChange={(e) => setNewProject({ ...newProject, projectName: e.target.value })}/>
+      <button onClick={() => addProject()}>Добавить проект</button>
       </div>
-      <label>Filtri:</label> <br />
-      <input ref={filterRef} type="text" onChange={() => filtreeriPoed()} /> <br />
-      <button onClick={naitaAvatudPoed}>Vaadake avatud kauplusi</button>
-      {renderAvatudPoed()}
-      <br/>
-      <button onClick={() => printPDF(poed)}>Print</button>
-      <button onClick={openCartModal}>Ostukorv</button>
+      <h2>Проекты</h2>
       <table>
         <thead>
           <tr>
-            <th><button onClick={sortPoedByNimi}>Nimi</button></th>
-            <th><button onClick={sortPoedByAvamine}>Avamine</button></th>
-            <th><button onClick={sortPoedBySulgemine}>Sulgemine</button></th>
-            <th><button onClick={sortPoedByKuulastuste}>Kuulastuste</button></th>
-            <th>Kustuta</th>
-            <th>Lisa Kuulastuste</th>
-            <th>Tooted</th>
+            <th style={{ textAlign: 'center' }}>Название проекта</th>
           </tr>
         </thead>
         <tbody>
-          {filtritudPoed.map((pood, index) => (
+          {projects.map((project,index) => (
             <tr key={index}>
-              <td>{pood.nimi}</td>
-              <td>{pood.avamine}</td>
-              <td>{pood.sulgemine}</td>
-              <td>{pood.kuulastusteArv}</td>
-              <td>
-                <button onClick={() => kustutaPood(pood.id)}>Kustuta</button>
-              </td>
-              <td>
-                <button onClick={() => kylasta(pood.nimi)}>+</button>
-              </td>
-              <td><button onClick={() => {
-                setSelectedStore(pood);
-                modalwindow();
-              }}>Vaata tooted</button></td>
+              <td style={{ textAlign: 'center' }}>{project.projectName}</td>
             </tr>
           ))}
         </tbody>
       </table>
-      {isModalOpen && (
-  <div className="modal active">
-    <div className="modal-content">
-      <span className="close" onClick={() => setIsModalOpen(false)}>&times;</span>
-      <h2>Tooted kaupluses</h2>
-      <ul>
-        {products.map((product, index) => (
-          <ul key={index}>
-            {product.title}: {product.price}€ -
-            <button onClick={() => addToCart(product)}>Lisa korvi</button>
-          </ul>
-        ))}
-      </ul>
-    </div>
-  </div>
-)}
-{isCartModalOpen  && (
-        <div className="modal active">
-          <div className="modal-content">
-            <span className="close" onClick={() => setIsCartModalOpen(false)}>&times;</span>
-            <h1>Ostukorv</h1>
-            {calculateTotalPrice(cart) > 0 &&(
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Kogus</th>
-                      <th>Pealkiri</th>
-                      <th>Hind</th>
-                      <th>Kustuta</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {cart.map((product, index) => (
-                      <tr key={index}>
-                        <td>{product.quantity}</td>
-                        <td>{product.title}</td>
-                        <td>{product.price}€</td>
-                        <td><button onClick={() => removeFromCart(product)}>Kustuta</button></td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>)}
-            {calculateTotalPrice(cart) == 0 &&(<text>Ostukorv on tühi</text>)}
-            {calculateTotalPrice(cart) > 0 &&(<h2>Maksma: {calculateTotalPrice(cart)}€</h2>)}
-            {calculateTotalPrice(cart) > 2 &&(<button onClick={removeAllFromCart}>Kustuta kõik</button>)}
-            {calculateTotalPrice(cart) > 0 &&(<button onClick={() => setPaymentConfirmation(true)}>Maksa</button>)}
-          </div>
-        </div>
-      )}
-      {PaymentConfirmation && (
-  <div className="modal active">
-    <div className="modal-content">
-      <h2>Maksetõend</h2>
-      <p>Kas olete kindel, et soovite maksta?</p>
-      <div>
-        <button onClick={() => PaymentConfirmations(true)}>Ja</button>
-        <button onClick={() => PaymentConfirmations(false)}>Ei</button>
+
+      <h2>Занимающиеся проектом</h2>
+      <table>
+        <thead>
+          <tr>
+          <th>Название проекта</th>
+          <th>Пользователь</th>
+          <th>Время</th>
+          <th>Статус</th>
+          <th>Роль</th>
+          </tr>
+        </thead>
+        <tbody>
+        {tasks.map((task, index) => {
+              const user = users.find((user) => user.userId === task.userId);
+              if (user && task.status === 'подтвержден') {
+                return (
+                  <tr key={index}>
+                    <td>{projects.find((project) => project.projectId === task.projectId)?.projectName}</td>
+                    <td>{user.firstName} {user.lastName}</td>
+                    <td>{task.entryTime} часов</td>
+                    <td>{task.status}</td>
+                    <td>{user.role}</td>
+                  </tr>
+                );
+              }
+              return null;
+            })}
+        </tbody>
+      </table>
       </div>
-    </div>
-  </div>
-)}
+    );}
+
+    function AdminDashboard() {return(
+      <div>
+        <div className='input'>
+      <h2>Добавить пользователя</h2>
+      <label>Имя:</label>
+      <input
+        type="text"
+        placeholder="Имя"
+        value={newUser.firstName}
+        onChange={(e) => AddNewUser({ ...newUser, firstName: e.target.value })}
+      />
+      <label>Фамилия:</label>
+      <input
+        type="text"
+        placeholder="Фамилия"
+        value={newUser.lastName}
+        onChange={(e) => AddNewUser({ ...newUser, lastName: e.target.value })}
+      />
+     <label>Роль:</label>
+      <select
+        value={newUser.role}
+        onChange={(e) => AddNewUser({ ...newUser, role: e.target.value })}
+      >
+        <option value="Developer">Developer</option>
+        <option value="QA Engineer">QA Engineer</option>
+        <option value="Project Manager">Project Manager</option>
+        <option value="System Analyst">System Analyst</option>
+        <option value="DevOps Engineer">DevOps Engineer</option>
+        <option value="Network Engineer">Network Engineer</option>
+        <option value="Security Analyst">Security Analyst</option>
+        <option value="Database Administrator">Database Administrator</option>
+        <option value="Technical Support Specialist">Technical Support Specialist</option>
+        <option value="IT Consultant">IT Consultant</option>
+        <option value="Software Architect">Software Architect</option>
+        <option value="Business Analyst">Business Analyst</option>
+        <option value="Scrum Master">Scrum Master</option>
+        <option value="Product Owner">Product Owner</option>
+        <option value="UI Developer">UI Developer</option>
+        <option value="UX Designer">UX Designer</option>
+        <option value="Mobile App Developer">Mobile App Developer</option>
+        <option value="Data Engineer">Data Engineer</option>
+        <option value="Cloud Solutions Architect">Cloud Solutions Architect</option>
+      </select>
+
+      <label>Профессия:</label>
+      <select
+        value={newUser.profession}
+        onChange={(e) => AddNewUser({ ...newUser, profession: e.target.value })}
+      >
+        <option value="Software Engineer">Software Engineer</option>
+        <option value="Data Scientist">Data Scientist</option>
+        <option value="UI/UX Designer">UI/UX Designer</option>
+        <option value="Network Engineer">Network Engineer</option>
+        <option value="Database Administrator">Database Administrator</option>
+        <option value="IT Security Specialist">IT Security Specialist</option>
+        <option value="Machine Learning Engineer">Machine Learning Engineer</option>
+        <option value="System Administrator">System Administrator</option>
+        <option value="Business Intelligence Analyst">Business Intelligence Analyst</option>
+        <option value="Full Stack Developer">Full Stack Developer</option>
+        <option value="Frontend Developer">Frontend Developer</option>
+        <option value="Backend Developer">Backend Developer</option>
+        <option value="Quality Assurance Engineer">Quality Assurance Engineer</option>
+        <option value="DevOps Engineer">DevOps Engineer</option>
+        <option value="Project Manager">Project Manager</option>
+        <option value="Scrum Master">Scrum Master</option>
+        <option value="Product Manager">Product Manager</option>
+        <option value="UI Designer">UI Designer</option>
+        <option value="UX Researcher">UX Researcher</option>
+      </select>
+
+      <button onClick={() => addUser()}>Добавить пользователя</button>
+
+      <h2>Добавить задачу</h2>
+      <label>Пользователь:</label>
+      <select
+        value={newTask.userId}
+        onChange={(e) => AddNewTask({ ...newTask, userId: e.target.value })}
+      >
+        <option value={0}>Выберите пользователя</option>
+        {users.map((user) => (
+          <option key={user.userId} value={user.userId}>
+            {user.firstName} {user.lastName}
+          </option>
+        ))}
+      </select>
+      <label>Проект:</label>
+      <select
+        value={newTask.projectId}
+        onChange={(e) => AddNewTask({ ...newTask, projectId: e.target.value })}
+      >
+        <option value={0}>Выберите проект</option>
+        {projects.map((project) => (
+          <option key={project.projectId} value={project.projectId}>
+            {project.projectName}
+          </option>
+        ))}
+      </select>
+      <label>Затраченное время (часы):</label>
+      <input
+        type="text"
+        placeholder="Затраченное время"
+        value={newTask.entryTime}
+        onChange={(e) => AddNewTask({ ...newTask, entryTime: e.target.value })}
+      />
+      <button onClick={() => addTask()}>Добавить задачу</button>
+      </div>
+      <h2>Проекты</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Проект ID</th>
+            <th>Название проекта</th>
+            {isAdminLoggedIn && <th>Действие</th>}
+          </tr>
+        </thead>
+        <tbody>
+          {projects.map((project,index) => (
+            <tr key={index}>
+              <td>{project.projectId}</td>
+              <td>{project.projectName}</td>
+              {isAdminLoggedIn && (
+              <td>
+              <button onClick={() => deleteProject(project.projectId)}>Удалить</button>
+              </td>
+              )}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {isAdminLoggedIn && (
+      <div>
+        <h2>Задачи</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Задачи ID</th>
+              <th>Название проекта</th>
+              <th>Пользователь</th>
+              <th>Время</th>
+              <th>Статус</th>
+              <th>Действие</th>
+            </tr>
+          </thead>
+          <tbody>
+            {tasks.map((task, index) => {
+              const user = users.find((user) => user.userId === task.userId);
+
+              return (
+                <tr key={index}>
+                  <td>{task.taskId}</td>
+                  <td>{projects.find((project) => project.projectId === task.projectId)?.projectName}</td>
+                  <td>{user && `${user.firstName} ${user.lastName}`}</td>
+                  <td>{task.entryTime} часов</td>
+                  <td>{task.status}</td>
+                  <td>
+                    <button onClick={() => deleteTask(task.taskId)}>Удалить</button>
+                    {task.status !== 'подтвержден' && (
+                    <button onClick={() => confirmTask(task.taskId)}style={{backgroundColor:'green'}}>Подтвердить</button>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    )}
+
+{isAdminLoggedIn && (
+        <div>
+      <h2>Пользователи</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Пользователя ID</th>
+            <th>Имя</th>
+            <th>Фамилия</th>
+            <th>Роль</th>
+            <th>Профессия</th>
+            <th>Действие</th>
+          </tr>
+        </thead>
+        <tbody>
+          {users.map((user,index) => (
+            <tr key={index}>
+              <td>{user.userId}</td>
+              <td>{user.firstName}</td>
+              <td>{user.lastName}</td>
+              <td>{user.role}</td>
+              <td>{user.profession}</td>
+              <td>
+              <button onClick={() => deleteUser(user.userId)}>Удалить</button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      </div>
+      )}
+      </div>
+    );
+    }
+
+  
+  return (
+    <div className='App'>
+      {isAdminLoggedIn ? (
+        <div>
+          <button onClick={handleAdminLogout}>Logout</button>
+          <AdminDashboard />
+        </div>
+      ) : (
+        <UserDashboard />
+      )}
     </div>
   );
 }
