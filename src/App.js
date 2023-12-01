@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import './App.css';
 
 function App() {
   const [AdminLogged, AddAdminLogged] = useState(false);
   const [adminloginpass, AddAdminloginpass] = useState({
     login: 'a',
-    password: 'a',
+    password: '123',
   });
   function AdminLogout() {
     AddAdminLogged(false);
@@ -50,11 +50,11 @@ function App() {
   // Функции для добавления новых записей
   function addUser() {
     if (!AdminLogged) {
-      alert('Admin login required');
+      alert('Требуется логин администратора');
       return;
     }
     if (!newUser.firstName || !newUser.lastName) {
-      alert('Please enter both first name and last name.');
+      alert('Пожалуйста, введите имя и фамилию.');
       return;
     }
     fetch('https://localhost:7269/api/User', {
@@ -179,7 +179,7 @@ function App() {
     const taskToUpdate = tasks.find((task) => task.taskId === taskId);
 
     if (!taskToUpdate) {
-        console.error(`Task with ID ${taskId} not found.`);
+        console.error(`Задача с идентификатором ${taskId} не найдена.`);
         return;
     }
 
@@ -238,16 +238,16 @@ function App() {
       if (login === adminloginpass.login && password === adminloginpass.password) {
         AddAdminLogged(true);
       } else {
-        alert('Invalid credentials');
+        alert('Недействительные учетные данные');
       }
     };
 
     return (
       <div className='Admin'>
         <h2>Вход администатора</h2>
-        <label>Логин:</label>
+        <label>Логин:(a)</label>
         <input type='text' value={login} onChange={(e) => setUsername(e.target.value)} />
-        <label>Пароль:</label>
+        <label>Пароль:(123)</label>
         <input type='password' value={password} onChange={(e) => setPassword(e.target.value)} />
         <button onClick={handleLogin}>Войти</button>
       </div>
@@ -312,29 +312,17 @@ function App() {
       </div>
     );}
 
-    function AdminDashboard() {return(
+    function AdminDashboard() {
+      return(
       <div>
         <div className='input'>
       <h2>Добавить пользователя</h2>
       <label>Имя:</label>
-      <input
-        type="text"
-        placeholder="Имя"
-        value={newUser.firstName}
-        onChange={(e) => AddNewUser({ ...newUser, firstName: e.target.value })}
-      />
+      <input type="text" placeholder="Имя" value={newUser.firstName} onChange={(e) => AddNewUser({ ...newUser, firstName: e.target.value })}/>
       <label>Фамилия:</label>
-      <input
-        type="text"
-        placeholder="Фамилия"
-        value={newUser.lastName}
-        onChange={(e) => AddNewUser({ ...newUser, lastName: e.target.value })}
-      />
+      <input type="text" placeholder="Фамилия" value={newUser.lastName} onChange={(e) => AddNewUser({ ...newUser, lastName: e.target.value })}/>
      <label>Роль:</label>
-      <select
-        value={newUser.role}
-        onChange={(e) => AddNewUser({ ...newUser, role: e.target.value })}
-      >
+      <select value={newUser.role} onChange={(e) => AddNewUser({ ...newUser, role: e.target.value })}>
         <option value="Developer">Developer</option>
         <option value="QA Engineer">QA Engineer</option>
         <option value="Project Manager">Project Manager</option>
@@ -357,10 +345,7 @@ function App() {
       </select>
 
       <label>Профессия:</label>
-      <select
-        value={newUser.profession}
-        onChange={(e) => AddNewUser({ ...newUser, profession: e.target.value })}
-      >
+      <select value={newUser.profession} onChange={(e) => AddNewUser({ ...newUser, profession: e.target.value })}>
         <option value="Software Engineer">Software Engineer</option>
         <option value="Data Scientist">Data Scientist</option>
         <option value="UI/UX Designer">UI/UX Designer</option>
@@ -386,10 +371,7 @@ function App() {
 
       <h2>Добавить задачу</h2>
       <label>Пользователь:</label>
-      <select
-        value={newTask.userId}
-        onChange={(e) => AddNewTask({ ...newTask, userId: e.target.value })}
-      >
+      <select value={newTask.userId} onChange={(e) => AddNewTask({ ...newTask, userId: e.target.value })}>
         <option value={0}>Выберите пользователя</option>
         {users.map((user) => (
           <option key={user.userId} value={user.userId}>
@@ -398,10 +380,7 @@ function App() {
         ))}
       </select>
       <label>Проект:</label>
-      <select
-        value={newTask.projectId}
-        onChange={(e) => AddNewTask({ ...newTask, projectId: e.target.value })}
-      >
+      <select value={newTask.projectId} onChange={(e) => AddNewTask({ ...newTask, projectId: e.target.value })}>
         <option value={0}>Выберите проект</option>
         {projects.map((project) => (
           <option key={project.projectId} value={project.projectId}>
@@ -410,12 +389,7 @@ function App() {
         ))}
       </select>
       <label>Затраченное время (часы):</label>
-      <input
-        type="text"
-        placeholder="Затраченное время"
-        value={newTask.entryTime}
-        onChange={(e) => AddNewTask({ ...newTask, entryTime: e.target.value })}
-      />
+      <input type="text" placeholder="Затраченное время" value={newTask.entryTime} onChange={(e) => AddNewTask({ ...newTask, entryTime: e.target.value })}/>
       <button onClick={() => addTask()}>Добавить задачу</button>
       </div>
       <h2>Проекты</h2>
